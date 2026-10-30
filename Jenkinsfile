@@ -127,7 +127,7 @@ pipeline {
                     set_env DB_PORT 3306
                     set_env DB_DATABASE "$DB_NAME"
                     set_env DB_USERNAME "$DB_USER"
-                    set_env DB_PASSWORD "$DB_PASS"
+                    set_env DB_PASSWORD "Ubuntu@0879"
 
                     # 5. Create the DB if missing
                     mysql -h127.0.0.1 -u"$DB_USER" -p"$DB_PASS" \
