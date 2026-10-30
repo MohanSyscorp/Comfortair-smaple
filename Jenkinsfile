@@ -72,7 +72,7 @@ pipeline {
             }
         }
 
-      stage('Test') {
+  stage('Test') {
             steps {
                 sh '''
                     set -eu
@@ -86,7 +86,15 @@ pipeline {
                             php artisan key:generate --no-interaction || true
                         fi
 
-                        # Use migrate:fresh here so automated tests always start with a clean database
+                        # Automatically update or inject correct test database settings into .env
+                        # (Adjust DB_USERNAME, DB_PASSWORD, and DB_DATABASE to match your server/MySQL setup)
+                        grep -q "^DB_CONNECTION=" .env && sed -i 's/^DB_CONNECTION=.*/DB_CONNECTION=mysql/' .env || echo "DB_CONNECTION=mysql" >> .env
+                        grep -q "^DB_HOST=" .env && sed -i 's/^DB_HOST=.*/DB_HOST=127.0.0.1/' .env || echo "DB_HOST=127.0.0.1" >> .env
+                        grep -q "^DB_PORT=" .env && sed -i 's/^DB_PORT=.*/DB_PORT=3306/' .env || echo "DB_PORT=3306" >> .env
+                        grep -q "^DB_DATABASE=" .env && sed -i 's/^DB_DATABASE=.*/DB_DATABASE=comfortair_testing/' .env || echo "DB_DATABASE=comfortair_testing" >> .env
+                        grep -q "^DB_USERNAME=" .env && sed -i 's/^DB_USERNAME=.*/DB_USERNAME=root/' .env || echo "DB_USERNAME=root" >> .env
+                        // grep -q "^DB_PASSWORD=" .env && sed -i 's/^DB_PASSWORD=.*/DB_PASSWORD=your_mysql_password/' .env || echo "DB_PASSWORD=your_mysql_password" >> .env
+
                         php artisan migrate:fresh --env=testing --no-interaction
                         php artisan test
                     fi
