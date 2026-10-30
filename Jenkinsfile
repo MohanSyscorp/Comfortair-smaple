@@ -93,7 +93,7 @@ pipeline {
                         grep -q "^DB_PORT=" .env && sed -i 's/^DB_PORT=.*/DB_PORT=3306/' .env || echo "DB_PORT=3306" >> .env
                         grep -q "^DB_DATABASE=" .env && sed -i 's/^DB_DATABASE=.*/DB_DATABASE=comfortair_testing/' .env || echo "DB_DATABASE=comfortair_testing" >> .env
                         grep -q "^DB_USERNAME=" .env && sed -i 's/^DB_USERNAME=.*/DB_USERNAME=root/' .env || echo "DB_USERNAME=root" >> .env
-                        // grep -q "^DB_PASSWORD=" .env && sed -i 's/^DB_PASSWORD=.*/DB_PASSWORD=your_mysql_password/' .env || echo "DB_PASSWORD=your_mysql_password" >> .env
+                        grep -q "^DB_PASSWORD=" .env && sed -i 's/^DB_PASSWORD=.*/DB_PASSWORD=Ubuntu@0879/' .env || echo "DB_PASSWORD=Ubuntu@0879" >> .env
 
                         php artisan migrate:fresh --env=testing --no-interaction
                         php artisan test
