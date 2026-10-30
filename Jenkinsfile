@@ -72,7 +72,7 @@ pipeline {
             }
         }
 
-stage('Test') {
+      stage('Test') {
             steps {
                 sh '''
                     set -eu
@@ -468,7 +468,6 @@ REMOTE_SCRIPT
         }
     }
 }
-
 
 
 
