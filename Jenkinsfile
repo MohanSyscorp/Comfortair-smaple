@@ -151,7 +151,7 @@ pipeline {
                             def ts = sh(returnStdout: true, script: 'date -u +%Y%m%d%H%M%S').trim()
                             env.RELEASE_ID = "${ts}-${env.BUILD_NUMBER}"
 
-                            env.BACKUP_DB = (env.TARGET_ENV == 'production' && env.BACKUP_DB_ON_PRODUCTION == 'true') ? 'true' : 'false'
+                            env.BACKUP_DB = ((env.TARGET_ENV == 'production' || env.TARGET_ENV == 'main') && env.BACKUP_DB_ON_PRODUCTION == 'true') ? 'true' : 'false'
 
                             echo "Target environment: ${env.TARGET_ENV}"
                             echo "Deployment path:    ${env.DEPLOY_PATH}"
@@ -178,8 +178,11 @@ pipeline {
                                 --no-interaction \
                                 --no-progress
 
-                            tar -czf deployment.tar.gz \
-                                --exclude='./deployment.tar.gz' \
+                            # Create archive outside workspace to prevent "file changed as we read it" error
+                            TMP_ARCHIVE="/tmp/${APP_NAME}-deploy-${BUILD_NUMBER}.tar.gz"
+                            rm -f "${TMP_ARCHIVE}" deployment.tar.gz
+
+                            tar --warning=no-file-changed -czf "${TMP_ARCHIVE}" \
                                 --exclude='./.git' \
                                 --exclude='./.env*' \
                                 --exclude='.env*' \
@@ -190,7 +193,14 @@ pipeline {
                                 --exclude='./storage/framework/cache/*' \
                                 --exclude='./storage/framework/sessions/*' \
                                 --exclude='./storage/framework/views/*' \
-                                .
+                                . || {
+                                    STATUS=$?
+                                    if [ "$STATUS" -ne 1 ]; then
+                                        exit "$STATUS"
+                                    fi
+                                }
+
+                            mv "${TMP_ARCHIVE}" deployment.tar.gz
                         '''
                         archiveArtifacts artifacts: 'deployment.tar.gz', fingerprint: true
                     }
@@ -270,7 +280,7 @@ if [ "$ENV_APP_ENV" != "$TARGET_ENV" ]; then
     exit 1
 fi
 
-if [ "$TARGET_ENV" = "production" ] && [ "$(envval APP_DEBUG)" != "false" ]; then
+if { [ "$TARGET_ENV" = "production" ] || [ "$TARGET_ENV" = "main" ]; } && [ "$(envval APP_DEBUG)" != "false" ]; then
     echo "ERROR: APP_DEBUG must be false in production."
     exit 1
 fi
