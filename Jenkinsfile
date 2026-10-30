@@ -140,7 +140,7 @@ pipeline {
                                 case 'main':
                                     env.DEPLOY_PATH = '/var/www/comfortair-production'
                                     env.APP_URL     = 'https://example.com'
-                                    env.TARGET_ENV  = 'production'
+                                    env.TARGET_ENV  = 'main'
                                     break
 
                                 default:
