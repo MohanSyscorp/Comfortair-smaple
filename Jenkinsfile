@@ -72,79 +72,25 @@ pipeline {
             }
         }
 
-  stage('Test') {
-    steps {
-        withCredentials([usernamePassword(credentialsId: 'mysql-test-creds',
-                                          usernameVariable: 'DB_USER',
-                                          passwordVariable: 'DB_PASS')]) {
-            sh '''
-                set -eu
+        stage('Test') {
+            steps {
+                sh '''
+                    set -eu
 
-                if [ -f artisan ]; then
-
-                    # 1. Pick the env file to work with
-                    if [ -f .env.testing ]; then
-                        ENV_FILE=.env.testing
-                        echo "Using .env.testing"
-                    else
-                        ENV_FILE=.env
-                        if [ ! -f .env ] && [ -f .env.example ]; then
+                    if [ -f artisan ]; then
+                        if [ -f .env.testing ]; then
+                            echo "Using .env.testing"
+                        elif [ ! -f .env ] && [ -f .env.example ]; then
                             echo "Creating build .env from .env.example"
                             cp .env.example .env
                             php artisan key:generate --no-interaction || true
                         fi
-                        touch .env
+
+                        php artisan test
                     fi
-
-                    # 2. Helper: set or add KEY=VALUE in the env file
-                    set_env() {
-                        if grep -q "^$1=" "$ENV_FILE"; then
-                            sed -i "s|^$1=.*|$1=$2|" "$ENV_FILE"
-                        else
-                            echo "$1=$2" >> "$ENV_FILE"
-                        fi
-                    }
-
-                    # 3. Work out the DB name dynamically
-                    DB_NAME=$(grep -E "^DB_DATABASE=" "$ENV_FILE" | cut -d= -f2- | tr -d '"' || true)
-                    if [ -z "$DB_NAME" ] && [ -f .env.example ]; then
-                        DB_NAME=$(grep -E "^DB_DATABASE=" .env.example | cut -d= -f2- | tr -d '"' || true)
-                    fi
-                    # fallback: Jenkins job name, sanitised for MySQL
-                    if [ -z "$DB_NAME" ]; then
-                        DB_NAME=$(echo "${JOB_BASE_NAME:-app}" | tr -c 'a-zA-Z0-9\\n' '_')
-                    fi
-                    # safety: always end with _testing
-                    case "$DB_NAME" in
-                        *_testing) ;;
-                        *) DB_NAME="${DB_NAME}_testing" ;;
-                    esac
-                    echo "Using test database: $DB_NAME"
-
-                    # 4. Write settings
-                    set_env DB_CONNECTION mysql
-                    set_env DB_HOST 127.0.0.1
-                    set_env DB_PORT 3306
-                    set_env DB_DATABASE "$DB_NAME"
-                    set_env DB_USERNAME "$DB_USER"
-                    set_env DB_PASSWORD "Ubuntu@0879"
-
-                    # 5. Create the DB if missing
-                    mysql -h127.0.0.1 -u"$DB_USER" -p"$DB_PASS" \
-                        -e "CREATE DATABASE IF NOT EXISTS \\`$DB_NAME\\`;"
-
-                    # 6. Migrate and test
-                    if [ "$ENV_FILE" = ".env.testing" ]; then
-                        php artisan migrate:fresh --env=testing --no-interaction
-                    else
-                        php artisan migrate:fresh --no-interaction
-                    fi
-                    php artisan test
-                fi
-            '''
+                '''
+            }
         }
-    }
-}
 
         stage('Build Frontend') {
             steps {
@@ -520,6 +466,3 @@ REMOTE_SCRIPT
         }
     }
 }
-
-
-
