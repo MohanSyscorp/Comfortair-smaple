@@ -72,7 +72,7 @@ pipeline {
             }
         }
 
-        stage('Test') {
+stage('Test') {
             steps {
                 sh '''
                     set -eu
@@ -86,6 +86,8 @@ pipeline {
                             php artisan key:generate --no-interaction || true
                         fi
 
+                        # Use migrate:fresh here so automated tests always start with a clean database
+                        php artisan migrate:fresh --env=testing --no-interaction
                         php artisan test
                     fi
                 '''
